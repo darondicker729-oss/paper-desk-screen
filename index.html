@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paper Desk</title>
+<style>
+  /* System font stack only — no local /fonts path on the public page. */
+  :root {
+    --bg: #000000;
+    --card: #070707;
+    --panel: #0f1211;
+    --tile: #111111;
+    --line: #1c1f1e;
+    --text: #f3f3f3;
+    --muted: #8d9190;
+    --dim: #5c605f;
+    --coral: #fa6c66;
+    --coral-dim: rgba(250,108,102,.16);
+    --mint: #51dda4;
+    --mint-dim: #0c2117;
+    --amber: #e8c36a;
+    --progress: #2b1211;
+    --progress-line: #5a2a28;
+    --gold-bg: #1a1508;
+    --gold-line: #a59467;
+    --gold-text: #e6d19a;
+    --next-bg: #151817;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+  }
+  body { background: #000; }
+  .shell {
+    width: 390px;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 14px 12px 24px;
+  }
+  .app {
+    background: #070707;
+    border: 1px solid #222424;
+    border-radius: 22px;
+    padding: 14px 12px 12px;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 0 4px;
+  }
+  .mark {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: #fff; color: #111;
+    display: flex; align-items: center; justify-content: center;
+    flex: 0 0 36px;
+  }
+  .brand h1 { font-size: 18px; font-weight: 640; letter-spacing: -0.03em; line-height: 1.1; }
+  .brand p { font-size: 11px; color: var(--muted); margin-top: 1px; font-weight: 450; }
+
+  /* Shared panel */
+  .panel {
+    background: #0a0c0b;
+    border: 1px solid #1a1d1c;
+    border-radius: 18px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .panel-hd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .panel-hd .plus {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: var(--coral); color: #1a0504;
+    display: flex; align-items: center; justify-content: center;
+    flex: 0 0 22px;
+  }
+  .panel-hd h2 { font-size: 15px; font-weight: 650; letter-spacing: -0.02em; }
+  .panel-hd .sub { color: var(--muted); font-weight: 450; font-size: 12px; margin-left: 2px; }
+  .panel-hd .when { margin-left: auto; color: var(--muted); font-size: 11px; font-weight: 500; white-space: nowrap; }
+
+  .meta {
+    font-size: 9px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .bal-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .hero {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -0.055em;
+    line-height: .95;
+  }
+  .hero.neg { color: var(--coral); }
+  .hero.pos { color: var(--mint); }
+  .hero.flat { color: var(--text); }
+  .today-chip {
+    margin-top: 10px;
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 640;
+    white-space: nowrap;
+  }
+  .today-chip.neg { background: #3a1513; color: var(--coral); }
+  .today-chip.pos { background: var(--mint-dim); color: var(--mint); }
+  .today-chip.flat { background: #1a1a1a; color: var(--muted); }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .tile {
+    background: var(--tile);
+    border: 1px solid #191c1b;
+    border-radius: 12px;
+    padding: 8px 8px 9px;
+    min-width: 0;
+  }
+  .tile .k {
+    font-size: 8px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    font-weight: 650;
+    margin-bottom: 4px;
+  }
+  .tile .v {
+    font-size: 15px;
+    font-weight: 680;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+  }
+  .tile .v.neg { color: var(--coral); }
+  .tile .v.pos { color: var(--mint); }
+
+  /* Heartbeat */
+  .pulse-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .status {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 5px;
+  }
+  .status.CRITICAL { background: var(--coral); color: #1a0504; }
+  .status.WATCH { background: var(--amber); color: #1a1404; }
+  .status.HEALTHY { background: var(--mint); color: #042015; }
+  .bpm {
+    font-size: 10px;
+    color: var(--dim);
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+  .chart { width: 100%; height: 92px; display: block; }
+
+  /* Feed */
+  .feed { list-style: none; margin-top: 8px; }
+  .feed li {
+    display: grid;
+    grid-template-columns: 62px 1fr auto;
+    gap: 6px;
+    align-items: baseline;
+    padding: 8px 0;
+    border-top: 1px solid #161918;
+    font-size: 12px;
+  }
+  .feed li:first-child { border-top: 0; }
+  .feed .t { color: var(--dim); font-size: 11px; font-weight: 500; }
+  .feed .d { color: #c9cccb; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed .a { font-weight: 650; font-size: 12px; white-space: nowrap; padding-left: 8px; }
+  .feed .a.neg { color: var(--coral); }
+  .feed .a.pos { color: var(--mint); }
+  .feed .a.flat { color: var(--muted); }
+
+  /* Plan */
+  .plan-hd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .plan-hd .mark {
+    width: 28px; height: 28px; border-radius: 8px;
+  }
+  .plan-hd h2 { font-size: 15px; font-weight: 650; letter-spacing: -0.02em; }
+  .plan-hd .sub { color: var(--muted); font-size: 12px; font-weight: 450; margin-left: 2px; }
+  .plan { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .plan li {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    border-radius: 12px;
+    padding: 9px 10px;
+    border: 1px solid transparent;
+  }
+  .plan li.done { background: var(--mint-dim); border-color: #163227; }
+  .plan li.progress { background: var(--progress); border-color: var(--progress-line); }
+  .plan li.next { background: var(--next-bg); border-color: #1c201f; }
+  .plan .ico { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+  .plan h3 { font-size: 13px; font-weight: 620; letter-spacing: -0.01em; line-height: 1.2; }
+  .plan p { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+  .chip {
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 7px;
+    white-space: nowrap;
+  }
+  .plan li.done .chip { background: var(--mint); color: #042015; }
+  .plan li.progress .chip { background: #1a0c0c; color: #d7c2c0; border: 1px solid #5a2a28; }
+  .plan li.next .chip { background: #0e0e0e; color: #8d9190; border: 1px solid #2a2e2d; }
+  .ck {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--mint); color: #042015;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .spin {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid #3a3f5a;
+    border-top-color: #7aa2ff;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .dotc {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 1.5px solid #3a3f3e;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dotc i { width: 4px; height: 4px; border-radius: 50%; background: #6a6e6d; display: block; }
+
+  /* Phone mock */
+  .phone-wrap { padding: 2px 0 4px; }
+  .phone-chip {
+    display: flex; justify-content: center; margin-bottom: 8px;
+  }
+  .phone-chip span {
+    background: #e8c36a; color: #1a1404;
+    font-size: 10px; font-weight: 750; letter-spacing: .02em;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .phone-chip span em { font-style: normal; font-weight: 600; color: #3a2e10; margin-left: 6px; letter-spacing: .04em; text-transform: lowercase; }
+  .phone {
+    background: #050505;
+    border: 2px solid #2a2a2a;
+    border-radius: 32px;
+    padding: 8px 10px 12px;
+    box-shadow: inset 0 0 0 1px #111;
+  }
+  .island {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px 10px;
+    font-size: 12px; font-weight: 600;
+    color: #ddd;
+  }
+  .island .notch {
+    width: 18px; height: 6px; border-radius: 4px; background: #1a1a1a; margin: 0 auto;
+    position: absolute; left: 50%; transform: translateX(-50%);
+  }
+  .island { position: relative; }
+  .live-line {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--muted); font-size: 10px; padding: 0 6px 8px;
+  }
+  .live-line .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); }
+  .live-line.ok .pip { background: var(--mint); }
+  .phone-brand { display: flex; align-items: center; gap: 8px; padding: 0 6px 8px; }
+  .phone-brand .mark { width: 28px; height: 28px; border-radius: 8px; }
+  .phone-brand h3 { font-size: 14px; font-weight: 650; }
+  .phone-brand p { font-size: 10px; color: var(--muted); }
+  .phone-brand p .dot { color: var(--mint); margin-right: 4px; }
+  .strip {
+    display: flex; align-items: center; gap: 6px;
+    background: #140e0e;
+    border: 1px solid #3a1a18;
+    border-radius: 10px;
+    padding: 6px 8px;
+    margin: 0 2px 10px;
+    font-size: 10px;
+  }
+  .strip.WATCH { background: #161208; border-color: #3a3010; }
+  .strip.HEALTHY { background: #08140f; border-color: #163227; }
+  .strip.CRITICAL { background: #140e0e; border-color: #3a1a18; }
+  .strip .amt { margin-left: auto; font-weight: 700; }
+  .strip .amt.neg { color: var(--coral); }
+  .strip .amt.pos { color: var(--mint); }
+
+  .log { display: flex; flex-direction: column; gap: 7px; padding: 0 2px; }
+  .bubble {
+    background: #161616;
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #e6e6e6;
+    max-width: 100%;
+  }
+  .bubble.update { background: #191919; }
+  .bubble.event { background: #121212; color: #c9cccb; font-size: 11.5px; }
+  .bubble .who { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); font-weight: 700; margin-bottom: 3px; }
+  .bubble .when { color: var(--dim); font-size: 9px; margin-top: 3px; }
+  .bubble .amt { font-weight: 700; }
+  .bubble .amt.pos { color: var(--mint); }
+  .bubble .amt.neg { color: var(--coral); }
+
+  .approval {
+    background: var(--gold-bg);
+    border: 1px solid var(--gold-line);
+    border-radius: 14px;
+    padding: 10px 12px 12px;
+    margin-top: 2px;
+  }
+  .approval .kicker {
+    font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--gold-line); font-weight: 750; margin-bottom: 4px;
+  }
+  .approval h4 { font-size: 13px; font-weight: 650; color: var(--gold-text); letter-spacing: -0.02em; margin-bottom: 6px; }
+  .approval p, .approval li { font-size: 11.5px; color: #d9ccb0; line-height: 1.4; }
+  .approval ul { margin: 6px 0 8px 16px; }
+  .approval li { margin: 3px 0; }
+  .await {
+    display: inline-block;
+    background: #0e0c06;
+    color: var(--amber);
+    border: 1px solid #5a4a20;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+  }
+  .composer {
+    margin-top: 10px;
+    background: #101010;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 9px 12px;
+    color: #555;
+    font-size: 12px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Bottom counters */
+  .counters {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 7px;
+    margin-top: 2px;
+  }
+  .counter {
+    background: var(--panel);
+    border: 1px solid #191c1b;
+    border-radius: 14px;
+    padding: 10px 8px 11px;
+    min-width: 0;
+  }
+  .counter .k {
+    font-size: 8px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dim); font-weight: 700; margin-bottom: 4px;
+  }
+  .counter .v {
+    font-size: 22px; font-weight: 720; letter-spacing: -0.04em; line-height: 1;
+  }
+  .counter .v.neg { color: var(--coral); }
+  .counter .v.pos { color: var(--mint); }
+
+  footer {
+    text-align: center;
+    color: #3e4241;
+    font-size: 10px;
+    line-height: 1.45;
+    padding: 12px 8px 4px;
+  }
+  .err {
+    display: none;
+    background: var(--progress);
+    border: 1px solid var(--progress-line);
+    color: var(--coral);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .stale {
+    display: none;
+    background: #161208;
+    border: 1px solid #3a3010;
+    color: var(--amber);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .freshness {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    margin: -4px 0 10px 0;
+    padding: 0 2px;
+  }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="app">
+      <header class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3 9h3l1.2-3 2.2 8L12.2 7H15" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Paper Desk</h1>
+          <p>dry-run paper trading</p>
+        </div>
+      </header>
+
+      <div class="err" id="err"></div>
+      <div class="stale" id="stale"></div>
+      <div class="freshness" id="last-updated">Last updated: —</div>
+
+      <section class="panel">
+        <div class="panel-hd">
+          <div class="plus" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="#1a0504" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <h2>Paper desk</h2>
+          <span class="sub">its balance is its pulse</span>
+          <span class="when" id="updated">—</span>
+        </div>
+        <div class="meta">Simulated · Kraken · Binance.US</div>
+        <div class="bal-row">
+          <div class="hero" id="combined-balance">—</div>
+          <div class="today-chip flat" id="today-chip">— today</div>
+        </div>
+        <div class="tiles">
+          <div class="tile">
+            <div class="k">Open trades</div>
+            <div class="v" id="tile-open">—</div>
+          </div>
+          <div class="tile">
+            <div class="k">P&amp;L / hr · 24h</div>
+            <div class="v" id="tile-hr">—</div>
+          </div>
+          <div class="tile">
+            <div class="k">Win rate</div>
+            <div class="v" id="tile-wr">—</div>
+          </div>
+        </div>
+        <div class="pulse-hd">
+          <span class="status" id="health">—</span>
+          <span class="bpm" id="pulse-note">closed P&amp;L</span>
+        </div>
+        <div id="chart"></div>
+        <ul class="feed" id="feed"></ul>
+      </section>
+
+      <section class="panel">
+        <div class="plan-hd">
+          <div class="mark" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+              <path d="M3 9h3l1.2-3 2.2 8L12.2 7H15" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2>Paper desk’s plan</h2>
+          <span class="sub">to stay paper-only</span>
+        </div>
+        <ul class="plan" id="plan"></ul>
+      </section>
+
+      <div class="phone-wrap">
+        <div class="phone-chip"><span>PAPER <em>dry-run · no live orders</em></span></div>
+        <div class="phone">
+          <div class="island">
+            <span id="phone-time">—</span>
+            <span class="notch"></span>
+            <span aria-hidden="true" style="display:flex;align-items:center;gap:4px">
+              <svg width="17" height="10" viewBox="0 0 17 10"><rect x="0.5" y="0.5" width="14" height="9" rx="2" stroke="#ddd" fill="none"/><rect x="2" y="2" width="9" height="6" rx="0.5" fill="#ddd"/><rect x="15" y="3" width="1.5" height="4" rx="0.4" fill="#ddd"/></svg>
+            </span>
+          </div>
+          <div class="live-line" id="live-line"><i class="pip"></i> paper bots · simulated balance</div>
+          <div class="phone-brand">
+            <div class="mark" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+                <path d="M3 9h3l1.2-3 2.2 8L12.2 7H15" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <h3>Paper Desk</h3>
+              <p id="phone-sub"><span class="dot">●</span> live · both bots dry-run</p>
+            </div>
+          </div>
+          <div class="strip" id="phone-strip"></div>
+          <div class="log" id="log"></div>
+          <div class="composer">Message Paper Desk — display only</div>
+        </div>
+      </div>
+
+      <div class="counters" id="counters"></div>
+    </div>
+    <footer>
+      Read-only view of paper (dry-run) bots · no live orders<br>
+      Figures are measured from Freqtrade. This is not financial advice.
+    </footer>
+  </div>
+<script>
+(function(){
+  const ET = "America/New_York";
+  function money(n, d){
+    if (n === null || n === undefined || Number.isNaN(n)) return "—";
+    const digits = d == null ? 2 : d;
+    return "$" + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: digits, maximumFractionDigits: digits});
+  }
+  function signed(n, d){
+    if (n === null || n === undefined || Number.isNaN(n)) return "—";
+    const core = money(n, d);
+    if (n > 0.005) return "+" + core;
+    if (n < -0.005) return "−" + core;
+    return core;
+  }
+  function cls(n){
+    if (n === null || n === undefined || Number.isNaN(n)) return "flat";
+    if (n > 0.005) return "pos";
+    if (n < -0.005) return "neg";
+    return "flat";
+  }
+  function shortTime(iso){
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d)) return "—";
+    let s = new Intl.DateTimeFormat("en-US", {timeZone: ET, hour: "numeric", minute: "2-digit"}).format(d);
+    return s.replace(" ", "").replace("AM","AM").replace("PM","PM");
+  }
+  function clock(iso){
+    const d = iso ? new Date(iso) : new Date();
+    return new Intl.DateTimeFormat("en-US", {timeZone: ET, hour: "numeric", minute: "2-digit"}).format(d);
+  }
+
+  function drawChart(series, health){
+    const w = 342, h = 92, padL = 4, padR = 8, padT = 10, padB = 8;
+    const innerW = w - padL - padR, innerH = h - padT - padB;
+    const combined = (series || []).find(s => s.id === "combined");
+    const pts = ((combined && combined.points) || []).slice();
+    const host = document.getElementById("chart");
+    if (!pts.length){
+      host.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:16px 0">No closed trades yet to plot.</div>';
+      return;
+    }
+    const ys = pts.map(p => p.y);
+    let ymin = Math.min(0, ...ys), ymax = Math.max(0, ...ys);
+    if (ymin === ymax){ ymin -= 1; ymax += 1; }
+    const pad = (ymax - ymin) * 0.18 || 1;
+    ymin -= pad; ymax += pad;
+    const times = pts.map(p => new Date(p.t).getTime());
+    let xmin = Math.min(...times), xmax = Math.max(...times);
+    if (xmin === xmax) xmax = xmin + 3600000;
+    const x = t => padL + (new Date(t).getTime() - xmin) / (xmax - xmin) * innerW;
+    const y = v => padT + (1 - (v - ymin) / (ymax - ymin)) * innerH;
+    const color = health === "HEALTHY" ? "#51dda4" : health === "WATCH" ? "#e8c36a" : "#fa6c66";
+    let d = "";
+    pts.forEach((p,i) => { d += (i?" L":"M") + x(p.t).toFixed(1) + " " + y(p.y).toFixed(1); });
+    const last = pts[pts.length-1];
+    const y0 = y(0);
+    host.innerHTML = `<svg class="chart" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <line x1="${padL}" y1="${y0}" x2="${w-padR}" y2="${y0}" stroke="#1c1f1e" stroke-dasharray="3 4"/>
+      <path d="${d}" fill="none" stroke="${color}" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow)"/>
+      <circle cx="${x(last.t).toFixed(1)}" cy="${y(last.y).toFixed(1)}" r="3" fill="${color}"/>
+    </svg>`;
+  }
+
+  function ico(state){
+    if (state === "done") return '<span class="ck"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2l2 2 4-4.4" fill="none" stroke="#042015" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+    if (state === "progress") return '<span class="spin" aria-hidden="true"></span>';
+    return '<span class="dotc" aria-hidden="true"><i></i></span>';
+  }
+
+  function render(data){
+    if (!data) return;
+    const err = document.getElementById("err");
+    if (data.error){ err.style.display="block"; err.textContent = data.error; }
+    else err.style.display="none";
+
+    const c = data.combined || {};
+    const health = (data.health && data.health.label) || "WATCH";
+    document.getElementById("updated").textContent = shortTime(data.updated_iso);
+    document.getElementById("phone-time").textContent = clock(data.updated_iso);
+    window.__DATA = data;
+    updateFreshness(data);
+
+    const bal = document.getElementById("combined-balance");
+    bal.textContent = c.balance == null ? "—" : money(c.balance);
+    bal.className = "hero " + cls(c.total_pnl);
+
+    const chip = document.getElementById("today-chip");
+    chip.textContent = signed(c.today_closed_pnl) + " today";
+    chip.className = "today-chip " + cls(c.today_closed_pnl);
+
+    document.getElementById("tile-open").textContent = c.open_trades == null ? "—" : String(c.open_trades);
+    const hr = document.getElementById("tile-hr");
+    hr.textContent = c.pnl_per_hour_24h == null ? "—" : (signed(c.pnl_per_hour_24h) + "/hr");
+    hr.className = "v " + cls(c.pnl_per_hour_24h);
+    const wr = document.getElementById("tile-wr");
+    wr.textContent = c.win_rate == null ? "—" : ((Math.round(c.win_rate*1000)/10).toFixed(1) + "%");
+
+    const hEl = document.getElementById("health");
+    hEl.textContent = health;
+    hEl.className = "status " + health;
+    const dd = data.health || {};
+    const note = [];
+    if (c.closed_pnl != null) note.push("closed " + signed(c.closed_pnl));
+    if (dd.drawdown_abs) note.push("dd " + signed(-Math.abs(dd.drawdown_abs)));
+    document.getElementById("pulse-note").textContent = note.join(" · ") || "closed P&L";
+
+    drawChart(data.equity, health);
+
+    const feed = (data.feed || []).slice(0, 8);
+    document.getElementById("feed").innerHTML = feed.length ? feed.map(e => {
+      const amt = e.kind === "cancelled"
+        ? '<span class="a flat">blocked</span>'
+        : (e.pnl == null ? '<span class="a flat"></span>' : `<span class="a ${cls(e.pnl)}">${signed(e.pnl)}</span>`);
+      const desc = e.line || e.title || "";
+      return `<li><span class="t">${shortTime(e.ts)}</span><span class="d">${desc}</span>${amt}</li>`;
+    }).join("") : '<li><span class="d">No filled trade events yet.</span></li>';
+
+    document.getElementById("plan").innerHTML = (data.plan || []).map(p => {
+      return `<li class="${p.state}">
+        <span class="ico">${ico(p.state)}</span>
+        <div><h3>${p.title}</h3><p>${p.detail || ""}</p></div>
+        <span class="chip">${p.chip || ""}</span>
+      </li>`;
+    }).join("");
+
+    const live = document.getElementById("live-line");
+    live.className = "live-line " + (c.bots_up === c.bots_total ? "ok" : "");
+    live.innerHTML = `<i class="pip"></i> ${c.bots_up || 0}/${c.bots_total || 2} bots up · simulated balance`;
+
+    const strip = document.getElementById("phone-strip");
+    strip.className = "strip " + health;
+    strip.innerHTML = `<span class="status ${health}">${health}</span>
+      <span>${c.open_trades || 0} open · ${c.closed_trades || 0} closed</span>
+      <span class="amt ${cls(c.total_pnl)}">${signed(c.total_pnl)}</span>`;
+
+    const log = document.getElementById("log");
+    const msgs = data.messages || [];
+    let html = msgs.map(m => {
+      const extra = (m.pnl == null || (m.text||"").indexOf("$") >= 0) ? "" : ` <span class="amt ${cls(m.pnl)}">${signed(m.pnl)}</span>`;
+      return `<div class="bubble ${m.kind || m.role}">
+        <div class="who">${m.title || m.role || "desk"}</div>
+        <div>${m.text || ""}${extra}</div>
+        <div class="when">${shortTime(m.ts)}</div>
+      </div>`;
+    }).join("");
+    const a = data.approval;
+    if (a){
+      const items = (a.items || []).map(t => `<li>${t}</li>`).join("");
+      html += `<div class="approval" aria-disabled="true">
+        <div class="kicker">${a.title || "Pending human approval"}</div>
+        <h4>${a.headline || ""}</h4>
+        <p>${a.body || "Pending human approval: none."}</p>
+        ${items ? `<ul>${items}</ul>` : ""}
+        <div class="await">${a.status_label || "Awaiting Daron"} — display only, no action</div>
+      </div>`;
+    }
+    log.innerHTML = html;
+
+    document.getElementById("counters").innerHTML = `
+      <div class="counter"><div class="k">Closed trades</div><div class="v">${c.closed_trades ?? "—"}</div></div>
+      <div class="counter"><div class="k">Wins / losses</div><div class="v">${c.wins ?? "—"} / ${c.losses ?? "—"}</div></div>
+      <div class="counter"><div class="k">Bots up</div><div class="v">${c.bots_up ?? "—"} / ${c.bots_total ?? "—"}</div></div>
+    `;
+  }
+
+  const STATE_URL = "https://api.github.com/repos/darondicker729-oss/paper-desk-screen/contents/state.json";
+  const STALE_MS = 15 * 60 * 1000;
+
+  function updateFreshness(data){
+    const last = document.getElementById("last-updated");
+    const stale = document.getElementById("stale");
+    const iso = data && data.updated_iso;
+    const et = data && data.updated_et;
+    const label = et || (iso ? shortTime(iso) : "—");
+    last.textContent = "Last updated: " + label;
+    let ageMs = null;
+    if (iso){
+      const t = Date.parse(iso);
+      if (!Number.isNaN(t)) ageMs = Date.now() - t;
+    }
+    if (ageMs != null && ageMs > STALE_MS){
+      stale.style.display = "block";
+      const mins = Math.max(16, Math.round(ageMs / 60000));
+      stale.textContent = "Data is stale (" + mins + " min old). Last updated " + label + ".";
+    } else {
+      stale.style.display = "none";
+      stale.textContent = "";
+    }
+  }
+
+  async function tick(){
+    try {
+      const r = await fetch(STATE_URL + "?t=" + Date.now(), {
+        cache: "no-store",
+        headers: { "Accept": "application/vnd.github.raw+json" }
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      render(data);
+    } catch (e) {
+      const err = document.getElementById("err");
+      err.style.display = "block";
+      err.textContent = "Could not refresh desk data.";
+      if (window.__DATA) updateFreshness(window.__DATA);
+    }
+  }
+  if (window.__DATA) render(window.__DATA);
+  else tick();
+  setInterval(tick, 60000);
+  setInterval(function(){ if (window.__DATA) updateFreshness(window.__DATA); }, 30000);
+})();
+</script>
+</body>
+</html>
