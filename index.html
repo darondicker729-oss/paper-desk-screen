@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Paper Desk</title>
+<!-- anim-v1: animated live screen -->
 <style>
   /* System font stack only — no local /fonts path on the public page. */
   :root {
@@ -432,10 +433,49 @@
     padding: 0 2px;
   }
 
+
+  /* ---- Animation layer (adapted from Spike desk screen) ---- */
+  .topbar { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 5; overflow: hidden; background: rgba(255,255,255,.03); }
+  .topbar i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--mint), #7aa2ff, var(--amber)); box-shadow: 0 0 10px rgba(81,221,164,.55); }
+  @keyframes refreshGrow { from { width: 0%; } to { width: 100%; } }
+  .fresh-row { display: flex; align-items: center; gap: 8px; margin: -4px 0 10px 0; padding: 0 2px; }
+  .fresh-row .freshness { margin: 0; }
+  .livepill { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 800; letter-spacing: .12em; color: var(--mint); background: var(--mint-dim); border: 1px solid #163227; border-radius: 999px; padding: 3px 8px; }
+  .livepill i { width: 6px; height: 6px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 8px var(--mint); animation: pulse 1.8s ease-in-out infinite; display: block; }
+  .livepill.stale { color: var(--amber); background: #161208; border-color: #3a3010; }
+  .livepill.stale i { background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: none; }
+  .eta { margin-left: auto; color: var(--dim); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
+  .live-line .pip, .phone-brand p .dot { animation: pulse 1.8s ease-in-out infinite; display: inline-block; }
+  .enter-in { animation: enterIn .5s cubic-bezier(.22,1,.36,1) both; }
+  .app > .panel:nth-of-type(1) { animation-delay: .06s; }
+  .app > .panel:nth-of-type(2) { animation-delay: .14s; }
+  .phone-wrap.enter-in { animation-delay: .22s; }
+  .counters.enter-in { animation-delay: .3s; }
+  @keyframes enterIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .feed li.enter, .bubble.enter, .plan li.enter { animation: feedIn .45s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes feedIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+  .pulse-area { opacity: 0; animation: fadeArea .85s ease .28s forwards; }
+  @keyframes fadeArea { to { opacity: 1; } }
+  .scan-halo { filter: blur(1.2px); }
+  .scan-core { fill: #f3fff9; stroke-width: 1.4; }
+  .scan-ring { fill: none; stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: scanRing 1.8s ease-out infinite; }
+  @keyframes scanRing { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(3.4); opacity: 0; } }
+  .num-flash { animation: numFlash .55s ease; }
+  @keyframes numFlash { 0% { filter: brightness(1.45); } 100% { filter: none; } }
+  .tile .v, .counter .v, .hero, .today-chip { font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) {
+    .topbar i, .livepill i, .live-line .pip, .phone-brand p .dot, .enter-in, .feed li.enter, .bubble.enter, .plan li.enter,
+    .pulse-area, .scan-ring, .num-flash, .spin { animation: none !important; transition: none !important; }
+    .enter-in, .feed li.enter, .bubble.enter, .plan li.enter, .pulse-area { opacity: 1 !important; transform: none !important; }
+    .pulse-line, .pulse-glow { stroke-dashoffset: 0 !important; }
+  }
+
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 </style>
 </head>
 <body>
+  <div class="topbar" aria-hidden="true"><i id="refreshBar"></i></div>
   <div class="shell">
     <div class="app">
       <header class="brand">
@@ -452,9 +492,9 @@
 
       <div class="err" id="err"></div>
       <div class="stale" id="stale"></div>
-      <div class="freshness" id="last-updated">Last updated: —</div>
+      <div class="fresh-row"><span class="livepill" id="livepill"><i></i>LIVE</span><div class="freshness" id="last-updated">Last updated: —</div><span class="eta" id="refreshEta"></span></div>
 
-      <section class="panel">
+      <section class="panel enter-in">
         <div class="panel-hd">
           <div class="plus" aria-hidden="true">
             <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="#1a0504" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -490,7 +530,7 @@
         <ul class="feed" id="feed"></ul>
       </section>
 
-      <section class="panel">
+      <section class="panel enter-in">
         <div class="plan-hd">
           <div class="mark" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
@@ -503,7 +543,7 @@
         <ul class="plan" id="plan"></ul>
       </section>
 
-      <div class="phone-wrap">
+      <div class="phone-wrap enter-in">
         <div class="phone-chip"><span>PAPER <em>dry-run · no live orders</em></span></div>
         <div class="phone">
           <div class="island">
@@ -531,7 +571,11 @@
         </div>
       </div>
 
-      <div class="counters" id="counters"></div>
+      <div class="counters enter-in" id="counters">
+        <div class="counter"><div class="k">Closed trades</div><div class="v" id="ct-closed">—</div></div>
+        <div class="counter"><div class="k">Wins / losses</div><div class="v" id="ct-wl">—</div></div>
+        <div class="counter"><div class="k">Bots up</div><div class="v" id="ct-up">—</div></div>
+      </div>
     </div>
     <footer>
       Read-only view of paper (dry-run) bots · no live orders<br>
@@ -571,6 +615,52 @@
     return new Intl.DateTimeFormat("en-US", {timeZone: ET, hour: "numeric", minute: "2-digit"}).format(d);
   }
 
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const POLL_MS = 60000;
+  let refreshStarted = Date.now(), chartSig = "", feedKeys = null, logKeys = null, scanRaf = 0;
+  function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
+  function tween(node, to, fmt, duration){
+    const next = Number(to);
+    if (to === null || to === undefined || !Number.isFinite(next)) { node._val = null; node.textContent = fmt(null); return; }
+    const first = node._val == null, from = first ? 0 : node._val;
+    node._val = next;
+    if (reduceMotion || from === next) { node.textContent = fmt(next); return; }
+    if (node._raf) cancelAnimationFrame(node._raf);
+    if (!first) { node.classList.remove("num-flash"); void node.offsetWidth; node.classList.add("num-flash"); }
+    const t0 = performance.now(), dur = duration || 800;
+    const frame = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      node.textContent = fmt(from + (next - from) * easeOut(p));
+      if (p < 1) node._raf = requestAnimationFrame(frame); else node.textContent = fmt(next);
+    };
+    node._raf = requestAnimationFrame(frame);
+  }
+  function armRefresh(){
+    refreshStarted = Date.now();
+    const bar = document.getElementById("refreshBar");
+    if (bar && !reduceMotion){ bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = "refreshGrow " + POLL_MS + "ms linear forwards"; }
+    tickEta();
+  }
+  function tickEta(){
+    const n = document.getElementById("refreshEta"); if (!n) return;
+    const left = Math.max(0, Math.ceil((POLL_MS - (Date.now() - refreshStarted)) / 1000));
+    n.textContent = left ? ("next " + left + "s") : "refreshing";
+  }
+  function keyedList(host, items, keyOf, build, prevKeys){
+    const keys = items.map(keyOf);
+    if (prevKeys && keys.join("\n") === prevKeys.join("\n")) return prevKeys;
+    const prev = new Set(prevKeys || []);
+    const frag = document.createDocumentFragment();
+    items.forEach((it, i) => {
+      const tmp = document.createElement("div"); tmp.innerHTML = build(it).trim();
+      const node = tmp.firstElementChild;
+      if (prevKeys && !prev.has(keys[i])) node.classList.add("enter");
+      frag.appendChild(node);
+    });
+    host.replaceChildren(frag);
+    return keys;
+  }
+
   function drawChart(series, health){
     const w = 342, h = 92, padL = 4, padR = 8, padT = 10, padB = 8;
     const innerW = w - padL - padR, innerH = h - padT - padB;
@@ -592,21 +682,43 @@
     const x = t => padL + (new Date(t).getTime() - xmin) / (xmax - xmin) * innerW;
     const y = v => padT + (1 - (v - ymin) / (ymax - ymin)) * innerH;
     const color = health === "HEALTHY" ? "#51dda4" : health === "WATCH" ? "#e8c36a" : "#fa6c66";
+    const sig = pts.map(p => p.t + ":" + p.y).join(",") + "|" + color;
+    if (sig === chartSig && host.querySelector("svg")) return;
+    chartSig = sig;
     let d = "";
     pts.forEach((p,i) => { d += (i?" L":"M") + x(p.t).toFixed(1) + " " + y(p.y).toFixed(1); });
     const last = pts[pts.length-1];
+    const lx = x(last.t).toFixed(1), ly = y(last.y).toFixed(1);
     const y0 = y(0);
+    const area = d + " L " + lx + " " + y0.toFixed(1) + " L " + x(pts[0].t).toFixed(1) + " " + y0.toFixed(1) + " Z";
     host.innerHTML = `<svg class="chart" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="2.2" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
       <line x1="${padL}" y1="${y0}" x2="${w-padR}" y2="${y0}" stroke="#1c1f1e" stroke-dasharray="3 4"/>
-      <path d="${d}" fill="none" stroke="${color}" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow)"/>
-      <circle cx="${x(last.t).toFixed(1)}" cy="${y(last.y).toFixed(1)}" r="3" fill="${color}"/>
+      <path class="pulse-area" d="${area}" fill="${color}" fill-opacity="0.10"/>
+      <path class="pulse-glow" d="${d}" fill="none" stroke="${color}" stroke-opacity="0.35" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path class="pulse-line" d="${d}" fill="none" stroke="${color}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle class="scan-halo" cx="${lx}" cy="${ly}" r="7" fill="${color}" fill-opacity="0.22"/>
+      <circle class="scan-ring" cx="${lx}" cy="${ly}" r="3.4" stroke="${color}"/>
+      <circle class="scan-core" cx="${lx}" cy="${ly}" r="3.1" stroke="${color}" style="filter:drop-shadow(0 0 5px ${color})"/>
     </svg>`;
+    if (scanRaf) cancelAnimationFrame(scanRaf);
+    const svg = host.querySelector("svg");
+    const path = svg.querySelector(".pulse-line"), glow = svg.querySelector(".pulse-glow");
+    const dots = svg.querySelectorAll(".scan-halo,.scan-ring,.scan-core");
+    if (reduceMotion || pts.length < 2) return;
+    try {
+      const len = path.getTotalLength();
+      for (const n of [path, glow]) { n.style.strokeDasharray = len; n.style.strokeDashoffset = len; }
+      const t0 = performance.now(), dur = 1150;
+      const follow = (now) => {
+        const p = Math.min(1, (now - t0) / dur), e = easeOut(p);
+        const off = String(len * (1 - e));
+        path.style.strokeDashoffset = off; glow.style.strokeDashoffset = off;
+        const pt = path.getPointAtLength(len * e);
+        dots.forEach(n => { n.setAttribute("cx", pt.x.toFixed(1)); n.setAttribute("cy", pt.y.toFixed(1)); });
+        if (p < 1) scanRaf = requestAnimationFrame(follow);
+      };
+      scanRaf = requestAnimationFrame(follow);
+    } catch (e) { /* no path length: static line */ }
   }
 
   function ico(state){
@@ -629,19 +741,19 @@
     updateFreshness(data);
 
     const bal = document.getElementById("combined-balance");
-    bal.textContent = c.balance == null ? "—" : money(c.balance);
+    tween(bal, c.balance, v => v == null ? "—" : money(v), 900);
     bal.className = "hero " + cls(c.total_pnl);
 
     const chip = document.getElementById("today-chip");
-    chip.textContent = signed(c.today_closed_pnl) + " today";
+    tween(chip, c.today_closed_pnl, v => signed(v) + " today", 800);
     chip.className = "today-chip " + cls(c.today_closed_pnl);
 
-    document.getElementById("tile-open").textContent = c.open_trades == null ? "—" : String(c.open_trades);
+    tween(document.getElementById("tile-open"), c.open_trades, v => v == null ? "—" : String(Math.round(v)), 600);
     const hr = document.getElementById("tile-hr");
-    hr.textContent = c.pnl_per_hour_24h == null ? "—" : (signed(c.pnl_per_hour_24h) + "/hr");
+    tween(hr, c.pnl_per_hour_24h, v => v == null ? "—" : (signed(v) + "/hr"), 800);
     hr.className = "v " + cls(c.pnl_per_hour_24h);
     const wr = document.getElementById("tile-wr");
-    wr.textContent = c.win_rate == null ? "—" : ((Math.round(c.win_rate*1000)/10).toFixed(1) + "%");
+    tween(wr, c.win_rate == null ? null : c.win_rate * 100, v => v == null ? "—" : (v.toFixed(1) + "%"), 800);
 
     const hEl = document.getElementById("health");
     hEl.textContent = health;
@@ -655,13 +767,15 @@
     drawChart(data.equity, health);
 
     const feed = (data.feed || []).slice(0, 8);
-    document.getElementById("feed").innerHTML = feed.length ? feed.map(e => {
+    const feedHost = document.getElementById("feed");
+    if (!feed.length){ feedHost.innerHTML = '<li><span class="d">No filled trade events yet.</span></li>'; feedKeys = []; }
+    else feedKeys = keyedList(feedHost, feed, e => (e.ts || "") + "|" + (e.line || e.title || "") + "|" + e.pnl, e => {
       const amt = e.kind === "cancelled"
         ? '<span class="a flat">blocked</span>'
         : (e.pnl == null ? '<span class="a flat"></span>' : `<span class="a ${cls(e.pnl)}">${signed(e.pnl)}</span>`);
       const desc = e.line || e.title || "";
       return `<li><span class="t">${shortTime(e.ts)}</span><span class="d">${desc}</span>${amt}</li>`;
-    }).join("") : '<li><span class="d">No filled trade events yet.</span></li>';
+    }, feedKeys && feedKeys.length ? feedKeys : null);
 
     document.getElementById("plan").innerHTML = (data.plan || []).map(p => {
       return `<li class="${p.state}">
@@ -683,9 +797,12 @@
 
     const log = document.getElementById("log");
     const msgs = data.messages || [];
-    let html = msgs.map(m => {
+    const newLogKeys = msgs.map(m => (m.ts || "") + "|" + (m.title || "") + "|" + (m.text || ""));
+    const prevLog = new Set(logKeys || []);
+    let html = msgs.map((m, mi) => {
+      const isNew = logKeys && !prevLog.has(newLogKeys[mi]);
       const extra = (m.pnl == null || (m.text||"").indexOf("$") >= 0) ? "" : ` <span class="amt ${cls(m.pnl)}">${signed(m.pnl)}</span>`;
-      return `<div class="bubble ${m.kind || m.role}">
+      return `<div class="bubble ${m.kind || m.role}${isNew ? " enter" : ""}">
         <div class="who">${m.title || m.role || "desk"}</div>
         <div>${m.text || ""}${extra}</div>
         <div class="when">${shortTime(m.ts)}</div>
@@ -702,13 +819,12 @@
         <div class="await">${a.status_label || "Awaiting Daron"} — display only, no action</div>
       </div>`;
     }
-    log.innerHTML = html;
+    if (!logKeys || newLogKeys.join("\n") !== logKeys.join("\n") || !log.innerHTML) log.innerHTML = html;
+    logKeys = newLogKeys;
 
-    document.getElementById("counters").innerHTML = `
-      <div class="counter"><div class="k">Closed trades</div><div class="v">${c.closed_trades ?? "—"}</div></div>
-      <div class="counter"><div class="k">Wins / losses</div><div class="v">${c.wins ?? "—"} / ${c.losses ?? "—"}</div></div>
-      <div class="counter"><div class="k">Bots up</div><div class="v">${c.bots_up ?? "—"} / ${c.bots_total ?? "—"}</div></div>
-    `;
+    tween(document.getElementById("ct-closed"), c.closed_trades, v => v == null ? "—" : String(Math.round(v)), 700);
+    document.getElementById("ct-wl").textContent = (c.wins ?? "—") + " / " + (c.losses ?? "—");
+    document.getElementById("ct-up").textContent = (c.bots_up ?? "—") + " / " + (c.bots_total ?? "—");
   }
 
   const STATE_URL = "https://api.github.com/repos/darondicker729-oss/paper-desk-screen/contents/state.json";
@@ -726,17 +842,21 @@
       const t = Date.parse(iso);
       if (!Number.isNaN(t)) ageMs = Date.now() - t;
     }
+    const pill = document.getElementById("livepill");
     if (ageMs != null && ageMs > STALE_MS){
+      if (pill){ pill.className = "livepill stale"; pill.lastChild.textContent = "STALE"; }
       stale.style.display = "block";
       const mins = Math.max(16, Math.round(ageMs / 60000));
       stale.textContent = "Data is stale (" + mins + " min old). Last updated " + label + ".";
     } else {
+      if (pill){ pill.className = "livepill"; pill.lastChild.textContent = "LIVE"; }
       stale.style.display = "none";
       stale.textContent = "";
     }
   }
 
   async function tick(){
+    armRefresh();
     try {
       const r = await fetch(STATE_URL + "?t=" + Date.now(), {
         cache: "no-store",
@@ -754,7 +874,9 @@
   }
   if (window.__DATA) render(window.__DATA);
   else tick();
-  setInterval(tick, 60000);
+  setInterval(tick, POLL_MS);
+  setInterval(tickEta, 1000);
+  armRefresh();
   setInterval(function(){ if (window.__DATA) updateFreshness(window.__DATA); }, 30000);
 })();
 </script>
